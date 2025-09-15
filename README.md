@@ -22,5 +22,7 @@ Práctica Nº 10: DCL
 
 Estas prácticas están basadas en los scripts AGENCIA_PERSONAL y AFATSE cuyos modelos relacionales deberías haber resuelto en el primer módulo de la asignatura.
 
+Tutorial SQL -> https://www.w3schools.com/MySQL/default.asp
+
 
 
