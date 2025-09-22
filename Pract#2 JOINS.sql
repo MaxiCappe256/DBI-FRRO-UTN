@@ -18,6 +18,15 @@
 -- Esteban Quito o Felipe Rojas. Mostrarlos de la siguiente forma:
 -- Pérez, Juan tiene como referencia a Felipe Rojas cuando trabajo en Constructora Gaia
 -- S.A
+SELECT DISTINCT
+	CONCAT(P.apellido, " ", P.nombre, " ", 
+	IFNULL(CONCAT("tiene como referencia a ", A.persona_contacto), 
+    CONCAT("no tiene referencias")), 
+	" cuando trabajó en ", UPPER(E.razon_social)) as texto
+	FROM `agencia_personal`.`personas` P 
+		INNER JOIN `agencia_personal`.`antecedentes` A ON P.dni=A.dni
+		INNER JOIN empresas E ON A.cuit=E.cuit
+	WHERE A.persona_contacto IN ("Armando Esteban Quito", "Felipe Rojas") or A.persona_contacto IS NULL;
 
 
 -- 7) Seleccionar para la empresa Viejos amigos, fechas de solicitudes, descripción del
