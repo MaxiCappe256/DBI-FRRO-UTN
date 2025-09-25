@@ -120,9 +120,19 @@ SELECT E.cuit "CUIT", E.razon_social "Razón social", desc_cargo "Cargo"
 			ON SE.cod_cargo=C.cod_cargo and SE.fecha_solicitud=C.fecha_solicitud and SE.cuit=C.cuit
 	WHERE nro_contrato IS NULL;
 
--- 13) Listar todos los cargos y para aquellos que hayan sido realizados (como
--- antecedente) por alguna persona indicar nombre y apellido de la persona y empresa donde
+-- 13) Listar todos los cargos y para aquellos que hayan sido mencionados como
+-- antecedente por alguna persona indicar nombre y apellido de la persona y empresa donde
 -- lo ocupó.
+-- desc_cargo DNI Apellido razon_social
+SELECT desc_cargo "Cargo", P.dni "DNI", apellido "Apellido", razon_social "Razón social"
+	FROM `agencia_personal`.`cargos` C 
+		LEFT JOIN `agencia_personal`.`antecedentes` A ON C.cod_cargo=A.cod_cargo
+        LEFT JOIN `agencia_personal`.`personas` P ON A.dni=P.dni
+        LEFT JOIN `agencia_personal`.`empresas` E ON A.cuit=E.cuit
+        ;
+        
+
+
 
 use `afatse`;
 -- BASE DE DATOS: AFATSE
