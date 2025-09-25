@@ -43,7 +43,16 @@ SELECT
 	WHERE `razon_social` = "Viejos amigos";
         
 
--- 8) Mostrar los antecedentes de cada postulante: 
+-- 8) Mostrar los antecedentes de cada postulante:
+-- Postulante (nombre y apellido) Cargo (descripción del cargo)
+SELECT 
+	CONCAT(P.nombre, " ", P.apellido) "Postulante", 
+    C.desc_cargo "Cargo"
+    FROM `agencia_personal`.`antecedentes` A 
+		INNER JOIN `agencia_personal`.`personas` P ON A.dni=P.dni
+        INNER JOIN `agencia_personal`.`cargos` C ON A.cod_cargo=C.cod_cargo;
+
+
 
 -- 9) Mostrar todas las evaluaciones realizadas para cada solicitud ordenar en forma
 -- ascendente por empresa y descendente por cargo:
