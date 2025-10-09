@@ -6,12 +6,39 @@
 
 -- 1 )¿Qué personas fueron contratadas por las mismas empresas que Stefanía Lopez?
 -- |dni |apellido |nombre|
+SELECT PER.dni, PER.apellido, PER.nombre 
+	FROM `agencia_personal`.`personas` PER 
+		INNER JOIN `agencia_personal`.`contratos` CON ON PER.dni=CON.dni 
+	WHERE CON.cuit IN (
+		SELECT CON.cuit 
+			FROM `agencia_personal`.`personas` PER 
+				INNER JOIN `agencia_personal`.`contratos` CON ON PER.dni=CON.dni
+			WHERE CONCAT(nombre, " ", apellido) LIKE "Stefan_a Lopez"); 
+
 
 
 -- 2) Encontrar a aquellos empleados que ganan menos que el máximo sueldo de los empleados
 -- de Viejos Amigos.
 -- |dni |nombre y apellidos |sueldo
+SELECT PER.dni, CONCAT(nombre, " ", apellido) "nombre y apellidos", sueldo
+	FROM `agencia_personal`.`contratos` CON 
+		INNER JOIN `agencia_personal`.`personas` PER ON CON.dni=PER.dni
+	WHERE sueldo < (
+		SELECT MAX(sueldo) 
+			FROM `agencia_personal`.`contratos` CON 
+				INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
+			WHERE EMP.razon_social = "Viejos Amigos");
+SET @MAX_SUELDO = (
+		SELECT MAX(sueldo) 
+			FROM `agencia_personal`.`contratos` CON 
+				INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
+			WHERE EMP.razon_social = "Viejos Amigos");
 
+
+SELECT PER.dni, CONCAT(nombre, " ", apellido) "nombre y apellidos", sueldo
+	FROM `agencia_personal`.`contratos` CON 
+		INNER JOIN `agencia_personal`.`personas` PER ON CON.dni=PER.dni
+	WHERE sueldo < @MAX_SUELDO;
 
 -- 3) Mostrar empresas contratantes y sus promedios de comisiones pagadas o a pagar, pero sólo
 -- de aquellas cuyo promedio supere al promedio de Tráigame eso.
