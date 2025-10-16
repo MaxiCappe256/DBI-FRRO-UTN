@@ -4,14 +4,37 @@
 -- BASE DE DATOS: AGENCIA_PERSONAL
 
 
--- 1 )¿Qué personas fueron contratadas por las mismas empresas que Stefanía Lopez?
+-- 1 )¿Qué personas fueron contratadas por las mismas empresas que Stefanía 
+-- Lopez?
 -- |dni |apellido |nombre|
 
--- 2) Encontrar a aquellos empleados que ganan menos que el máximo sueldo de los empleados
--- de Viejos Amigos.
+SELECT per.dni, per.apellido, per.nombre
+	FROM `agencia_personal`.`personas` per
+    INNER JOIN `agencia_personal`.`contratos` con
+		ON per.dni = con.dni
+	INNER JOIN `agencia_personal`.`empresas` emp
+		ON con.cuit = emp.cuit
+	WHERE per.nombre = "Stefania" AND per.apellido = "Lopez";
+		
+
+
+
+-- 2) Encontrar a aquellos empleados que ganan menos que el máximo sueldo de 
+-- los empleados de Viejos Amigos.
 -- |dni |nombre y apellidos |sueldo
 
 
+
+SELECT per.dni, CONCAT(per.nombre, " ", per.apellido), con.sueldo
+	FROM `agencia_personal`.`contratos` con
+        INNER JOIN `agencia_personal`.`empresas` emp ON con.cuit = emp.cuit
+		INNER JOIN `agencia_personal`.`personas` per ON con.dni = per.dni
+		WHERE con.sueldo < (
+        SELECT MAX(con.sueldo)
+		FROM `agencia_personal`.`contratos` con2
+        INNER JOIN `agencia_personal`.`empresas` emp2 ON con2.cuit = emp2.cuit
+		WHERE emp2.razon_social = "Viejos Amigos"
+        );
 
 
 -- 3) Mostrar empresas contratantes y sus promedios de comisiones pagadas o a pagar, pero sólo
@@ -38,10 +61,34 @@ SELECT AVG(importe_comision)
 	
 
 
--- 4) Seleccionar las comisiones pagadas que tengan un importe menor al promedio de todas las
--- comisiones(pagas y no pagas), mostrando razón social de la empresa contratante, mes
--- contrato, año contrato , nro. contrato, nombre y apellido del empleado.
+-- 4) Seleccionar las comisiones pagadas que tengan un importe menor al promedio 
+-- de todas las comisiones(pagas y no pagas), mostrando razón social de la 
+-- empresa contratante, mes contrato, año contrato , nro. contrato, nombre y 
+-- apellido del empleado.
 
+SELECT 
+	emp.razon_social, 
+    per.nombre,
+    per.apellido,
+    com.nro_contrato,
+    com.mes_contrato,
+    com.anio_contrato,
+    com.importe_comision    
+	FROM `agencia_personal`.`comisiones` com
+    INNER JOIN `agencia_personal`.`contratos` con 
+    ON com.nro_contrato = con.nro_contrato
+    INNER JOIN `agencia_personal`.`empresas`emp
+    ON con.cuit = emp.cuit
+    INNER JOIN `agencia_personal`.`personas` per
+    ON con.dni = per.dni
+    WHERE com.fecha_pago IS NOT NULL AND fecha_pago < (
+SELECT AVG(com2.importe_comision) promedio_comisiones
+	FROM `agencia_personal`.`comisiones` com2
+    INNER JOIN `agencia_personal`.`contratos` con2
+    ON com2.nro_contrato = con2.nro_contrato
+);
+    
+    
 -- 5) Determinar las empresas que en promedio pagaron más comisiones 
 -- que la comision promedio
 
@@ -212,14 +259,12 @@ SELECT alu.dni,
     ;
 
 
--- 16)Para conocer la disponibilidad de lugar en los cursos que empiezan en abril para
--- lanzar una campaña se desea conocer la cantidad de alumnos inscriptos a los cursos
--- que comienzan a partir del 1/04/2014 indicando: Plan de Capacitación, curso, fecha de
--- inicio, salón, cantidad de alumnos inscriptos y diferencia con el cupo de alumnos
--- registrado para el curso que tengan al más del 80% de lugares disponibles respecto del
--- cupo.
--- Ayuda: tener en cuenta el uso de los paréntesis y la precedencia de los operadores
--- matemáticos.
+-- 16)Para conocer la disponibilidad de lugar en los cursos que empiezan en abril 
+-- para lanzar una campaña se desea conocer la cantidad de alumnos inscriptos a 
+-- los cursos que comienzan a partir del 1/04/2014 indicando: Plan de 
+-- Capacitación, curso, fecha de inicio, salón, cantidad de alumnos inscriptos 
+-- y diferencia con el cupo de alumnos registrado para el curso que tengan al 
+-- más del 80% de lugares disponibles respecto del cupo.
+-- Ayuda: tener en cuenta el uso de los paréntesis y la precedencia de los 
+-- operadores matemáticos.
 -- nro_curso fecha_ini salon cupo count( dni ) ( cupo - count( dni ) )
-
-
