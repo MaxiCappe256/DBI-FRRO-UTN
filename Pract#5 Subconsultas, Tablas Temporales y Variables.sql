@@ -6,122 +6,49 @@
 
 -- 1 )¿Qué personas fueron contratadas por las mismas empresas que Stefanía Lopez?
 -- |dni |apellido |nombre|
-SELECT PER.dni, PER.apellido, PER.nombre 
-	FROM `agencia_personal`.`personas` PER 
-		INNER JOIN `agencia_personal`.`contratos` CON ON PER.dni=CON.dni 
-	WHERE CON.cuit IN (
-		SELECT CON.cuit 
-			FROM `agencia_personal`.`personas` PER 
-				INNER JOIN `agencia_personal`.`contratos` CON ON PER.dni=CON.dni
-			WHERE CONCAT(nombre, " ", apellido) LIKE "Stefan_a Lopez"); 
 
 -- 2) Encontrar a aquellos empleados que ganan menos que el máximo sueldo de los empleados
 -- de Viejos Amigos.
 -- |dni |nombre y apellidos |sueldo
 
-# utilizando subconsultas
-SELECT PER.dni, CONCAT(nombre, " ", apellido) "nombre y apellidos", sueldo
-	FROM `agencia_personal`.`contratos` CON 
-		INNER JOIN `agencia_personal`.`personas` PER ON CON.dni=PER.dni
-	WHERE sueldo < (
-		SELECT MAX(sueldo) 
-			FROM `agencia_personal`.`contratos` CON 
-				INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
-			WHERE EMP.razon_social = "Viejos Amigos");
-# utilizando subconsultas
 
-# utilizando variables
-SET @MAX_SUELDO = (
-		SELECT MAX(sueldo) 
-			FROM `agencia_personal`.`contratos` CON 
-				INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
-			WHERE EMP.razon_social = "Viejos Amigos");
-SELECT PER.dni, CONCAT(nombre, " ", apellido) "nombre y apellidos", sueldo
-	FROM `agencia_personal`.`contratos` CON 
-		INNER JOIN `agencia_personal`.`personas` PER ON CON.dni=PER.dni
-	WHERE sueldo < @MAX_SUELDO;
-# utilizando variables
+
 
 -- 3) Mostrar empresas contratantes y sus promedios de comisiones pagadas o a pagar, pero sólo
 -- de aquellas cuyo promedio supere al promedio de Tráigame eso.
-SELECT emp.cuit, emp.razon_social, AVG(importe_comision) "comisión Promedio "
-	FROM `agencia_personal`.`comisiones` COM 
-		INNER JOIN `agencia_personal`.`contratos` CON ON COM.nro_contrato=CON.nro_contrato 
-        INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
+
+-- cuit raxon_social avg(importe_comision)
+SELECT emp.cuit, razon_social, AVG(importe_comision) "Promedio imp comision"	
+	FROM `agencia_personal`.`comisiones` com
+    INNER JOIN `agencia_personal`.`contratos` con
+		ON com.nro_contrato = con.nro_contrato
+	INNER JOIN `agencia_personal`.`empresas` emp
+		ON con.cuit = emp.cuit
 	GROUP BY emp.cuit
     HAVING AVG(importe_comision) > (
-		SELECT AVG(importe_comision)
-			FROM `agencia_personal`.`comisiones` COM 
-				INNER JOIN `agencia_personal`.`contratos` CON ON COM.nro_contrato=CON.nro_contrato 
-				INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
-			WHERE razon_social = "Tráigame eso");
+        
+SELECT AVG(importe_comision)
+	FROM `agencia_personal`.`comisiones` com
+    INNER JOIN `agencia_personal`.`contratos` con
+		ON com.nro_contrato = con.nro_contrato
+	INNER JOIN `agencia_personal`.`empresas` emp
+		ON con.cuit = emp.cuit
+	WHERE razon_social = "Tráigame eso");
+	
+	
 
 
 -- 4) Seleccionar las comisiones pagadas que tengan un importe menor al promedio de todas las
 -- comisiones(pagas y no pagas), mostrando razón social de la empresa contratante, mes
 -- contrato, año contrato , nro. contrato, nombre y apellido del empleado.
 
-SET @prom_comision=(SELECT AVG(importe_comision) FROM `agencia_personal`.`comisiones`);
-SELECT EMP.razon_social "Razón social", mes_contrato "mes contrato", anio_contrato "año contrato",
-	CON.nro_contrato "Nro contrato", CONCAT(nombre, " ", apellido) "Nombre y apellido"
-	FROM `agencia_personal`.`comisiones` COM 
-		INNER JOIN `agencia_personal`.`contratos` CON ON COM.nro_contrato=CON.nro_contrato
-        INNER JOIN `agencia_personal`.`empresas` EMP ON CON.cuit=EMP.cuit
-        INNER JOIN `agencia_personal`.`personas` PER ON CON.dni=PER.dni
-	WHERE fecha_pago IS NOT NULL and importe_comision < @prom_comision;
-
-
 -- 5) Determinar las empresas que en promedio pagaron más comisiones 
 -- que la comision promedio
-SELECT AVG(sueldo) FROM `agencia_personal`.`contratos`;
 
-SELECT emp.cuit, emp.razon_social, AVG(importe_comision) "Sueldo promedio"
-	FROM `agencia_personal`.`empresas` emp
-		INNER JOIN `agencia_personal`.`solicitudes_empresas` SE
-			ON emp.cuit=SE.cuit
-		INNER JOIN `agencia_personal`.`contratos` con 
-			ON SE.cuit=con.cuit 
-				and SE.cod_cargo=con.cod_cargo 
-					and SE.fecha_solicitud=con.fecha_solicitud
-		INNER JOIN `agencia_personal`.`comisiones` COM ON con.nro_contrato=COM.nro_contrato
-	GROUP BY emp.cuit
-    HAVING AVG(importe_comision) > (
-		SELECT AVG(importe_comision) FROM `agencia_personal`.`comisiones`)
-    ;
 
 
 -- 6) Seleccionar los empleados que no tengan educación no formal o terciario.
 -- |apellido |nombre   |
-SELECT DISTINCT nombre, apellido   # duplicados porque tienen más de un titulos
-	FROM `agencia_personal`.`personas` per 
-		LEFT JOIN `agencia_personal`.`personas_titulos` pt ON per.dni=pt.dni
-        # LEFT JOIN `agencia_personal`.`titulos` t ON pt.cod_titulo=t.cod_titulo
-    WHERE pt.cod_titulo IN (
-		SELECT cod_titulo FROM `agencia_personal`.`titulos`
-			WHERE tipo_titulo NOT IN ("Educacion no formal", "Terciario")
-    )
-    ORDER BY apellido;
-;
-
-SELECT DISTINCT PER.apellido, PER.nombre 
-	FROM `agencia_personal`.`personas` PER
-		INNER JOIN `agencia_personal`.`personas_titulos` PT ON PER.dni = PT.dni
-        INNER JOIN `agencia_personal`.`titulos` TIT ON PT.cod_titulo = TIT.cod_titulo
-	WHERE tipo_titulo NOT IN ("Educacion no formal", "Terciario");
-
-SELECT 
-  P.apellido,
-  P.nombre
-FROM personas P
-WHERE P.dni NOT IN (
-  SELECT PT.dni
-  FROM personas_titulos PT
-  INNER JOIN titulos T ON PT.cod_titulo = T.cod_titulo
-  WHERE T.tipo_titulo IN ('Educacion no formal', 'Terciario'));
-
-
-
-
 
 
 
@@ -132,20 +59,158 @@ WHERE P.dni NOT IN (
 
 
 
-
-
 -- 9 – 10 – 11 – 12 – 16
 -- 9) Alumnos que se hayan inscripto a más cursos que Antoine de Saint-Exupery. Mostrar
 -- todos los datos de los alumnos, la cantidad de cursos a la que se inscribió y cuantas
 -- veces más que Antoine de Saint-Exupery.
 -- |dni |nombre|apellido |direccion |email |te |count(*) count(*)- @cant)
 
+SET @COUNT_ANTOINE = (
+	SELECT COUNT(*)
+    FROM `afatse`.`alumnos` alu
+    INNER JOIN `afatse`.`inscripciones` ins
+		ON alu.dni = ins.dni
+	WHERE alu.nombre = "Antoine de" AND alu.apellido = "Saint-Exupery"
+);
+
+
+SELECT 
+	alu.dni "dni",
+    alu.nombre "nombre",
+    alu.apellido "apellido",
+    alu.direccion "direccion",
+    alu.email "email",
+    alu.tel "tel",
+    COUNT(*),
+    COUNT(*) - @COUNT_ANTOINE "diferencia"
+	FROM `afatse`.`inscripciones` ins
+    INNER JOIN `afatse`.`alumnos` alu
+		ON ins.dni = alu.dni    
+    GROUP BY alu.dni
+    HAVING COUNT(*) > @COUNT_ANTOINE
+    ;
+
+-- 10) En el año 2014, qué cantidad de alumnos se han inscripto a los Planes de Capacitación
+-- indicando para cada Plan de Capacitación la cantidad de alumnos inscriptos y el
+-- porcentaje que representa respecto del total de inscriptos a los Planes de Capacitación
+-- dictados en el año.
+
+SET @CANT_ALUM_2014 = (
+	SELECT COUNT(*) 
+		FROM `afatse`.`inscripciones` ins
+        INNER JOIN `afatse`.`plan_capacitacion` plc
+			ON ins.nom_plan = plc.nom_plan
+		WHERE YEAR(fecha_inscripcion) = 2014
+);
+
+SELECT @CANT_ALUM_2014;
+
+SELECT 
+	ins.nom_plan "nom_plan",
+    COUNT(*),
+    ROUND((COUNT(*) / @CANT_ALUM_2014) * 100, 2) "% Total"
+	FROM `afatse`.`inscripciones` ins
+        INNER JOIN `afatse`.`plan_capacitacion` plc
+			ON ins.nom_plan = plc.nom_plan
+		WHERE YEAR(fecha_inscripcion) = 2014
+		GROUP BY ins.nom_plan;
+        
+
 -- 11) Indicar el valor actual de los planes de Capacitación
--- nom_plan fecha_desde_plan valor_plan
+-- nom_plan | fecha_desde_plan | valor_plan
+
+DROP TEMPORARY TABLE IF EXISTS tt_ult_fecha;
+
+CREATE TEMPORARY TABLE tt_ult_fecha (
+	SELECT nom_plan, MAX(fecha_desde_plan) "ult_fecha"
+    FROM `afatse`.`valores_plan`
+    GROUP BY nom_plan
+);
+
+DROP TEMPORARY TABLE tt_ult_fecha;
+
+SELECT val.nom_plan,
+	val.fecha_desde_plan,
+    val.valor_plan
+	FROM `afatse`.`valores_plan` val
+    INNER JOIN `afatse`.`tt_ult_fecha` ult
+		ON val.nom_plan = ult.nom_plan
+	WHERE val.fecha_desde_plan = ult.ult_fecha;
 
 
 -- 12) Plan de capacitacion mas barato. Indicar los datos del plan de capacitacion y el valor actual
 -- nom_plan desc_plan hs modalidad valor_plan
+
+SET @valor_mas_barato = (
+	SELECT MIN(valor_plan) 
+		FROM `afatse`.`valores_plan`
+);
+
+SELECT @valor_mas_barato;
+
+SELECT val.nom_plan, cap.desc_plan, cap.hs, cap.modalidad, val.valor_plan
+	FROM `afatse`.`valores_plan` val
+    INNER JOIN `afatse`.`plan_capacitacion` cap
+		ON val.nom_plan = cap.nom_plan
+	WHERE val.valor_plan = @valor_mas_barato;
+       
+       
+-- 13) ¿Qué instructores que han dictado algún curso del Plan de Capacitación “Marketing 1” el
+-- año 2014 y no vayan a dictarlo este año? (año 2015)
+
+SELECT ins.cuil 
+	FROM `afatse`.`instructores` ins
+    INNER JOIN `afatse`.`cursos_instructores` curins
+		ON ins.cuil = curins.cuil
+	INNER JOIN `afatse`.`cursos` cur
+		ON curins.nom_plan = cur.nom_plan
+	WHERE YEAR(cur.fecha_ini) = 2015 AND cur.nom_plan = "Marketing 1" AND cur.fecha_fin = 2014
+    GROUP BY ins.cuil
+    ;
+
+-- 14) Alumnos que tengan todas sus cuotas pagas hasta la fecha.
+
+SELECT dni, nombre, apellido, tel, email, direccion
+	FROM `afatse`.`alumnos`
+    WHERE dni NOT IN (
+	SELECT dni
+		FROM `afatse`.`cuotas` cuo
+		WHERE fecha_pago IS NULL)
+        ORDER BY apellido DESC;
+        
+        
+-- 15) Alumnos cuyo promedio supere al del curso que realizan. Mostrar dni, nombre y apellido,
+-- promedio y promedio del curso.
+
+
+
+DROP TEMPORARY TABLE IF EXISTS tt_promedio_cursos;
+
+CREATE TEMPORARY TABLE tt_promedio_cursos (
+	SELECT eva.nom_plan,  eva.nro_curso, AVG(eva.nota) AS prom_curso
+		FROM `afatse`.`evaluaciones` eva
+		GROUP BY eva.nom_plan, eva.nro_curso
+        
+);
+
+SELECT * FROM tt_promedio_cursos;
+
+DROP TEMPORARY TABLE tt_promedio_cursos;
+
+SELECT alu.dni,
+	alu.nombre,
+    alu.apellido,
+    ROUND(AVG(eva.nota),2) "avg nota",
+    ROUND(AVG(prom.prom_curso)) "prom curso"
+	FROM `afatse`.`alumnos` alu
+    INNER JOIN `afatse`.`evaluaciones` eva
+		ON alu.dni = eva.dni
+	INNER JOIN `afatse`.`tt_promedio_cursos` prom
+		ON eva.nom_plan = prom.nom_plan AND eva.nro_curso = prom.nro_curso
+	GROUP BY alu.dni, alu.nombre, alu.apellido, prom.prom_curso
+	HAVING AVG(eva.nota) > prom.prom_curso
+    ;
+
 
 -- 16)Para conocer la disponibilidad de lugar en los cursos que empiezan en abril para
 -- lanzar una campaña se desea conocer la cantidad de alumnos inscriptos a los cursos
