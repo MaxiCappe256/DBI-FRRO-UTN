@@ -272,11 +272,14 @@ DROP TEMPORARY TABLE IF EXISTS `afatse`.`tt_cant_alu_insc`;
 
 CREATE TEMPORARY TABLE `afatse`.`tt_cant_alu_insc` ( 
 SELECT 
+	cursos.nom_plan cur_nom_plan,
+    cursos.nro_curso cur_nro_curso,
     COUNT(insc.dni) cont_alu
 	FROM `afatse`.`cursos` cursos
 	INNER JOIN `afatse`.`inscripciones` insc
 		ON cursos.nro_curso = insc.nro_curso AND cursos.nom_plan = insc.nom_plan
 	WHERE cursos.fecha_ini >= '2014-04-01'
+    GROUP BY cursos.nom_plan, cursos.nro_curso
 );
 
 SELECT 
@@ -284,14 +287,20 @@ SELECT
     cursos.fecha_ini,
     cursos.salon,
     cursos.cupo,
-    cant_alu.cont_alu
+    cant_alu.cont_alu,
+	(cursos.cupo - COUNT(cant_alu))
 	FROM `afatse`.`cursos` cursos
-    INNER JOIN `afatse`.`tt_cant_alu_insc` cant_alu
-		ON cursos.nom_plan = cant_alu.nom_plan AND cursos.nro_curso = cant_alu.nom_plan
+    LEFT JOIN `afatse`.`tt_cant_alu_insc` cant_alu
+		ON cursos.nom_plan = cant_alu.cur_nom_plan 
+		AND cursos.nro_curso = cant_alu.cur_nro_curso
 	INNER JOIN `afatse`.`plan_capacitacion` planes
 		ON cursos.nom_plan = planes.nom_plan
-	INNER JOIN `afatse`.`inscripciones` insc
-		ON cursos.nom_plan = insc.nom_plan AND cursos.nro_curso = insc.nro_curso
-	GROUP BY cursos.nro_curso;
-    
+	GROUP BY 
+		cursos.nro_curso, 
+		cursos.fecha_ini, 
+        cursos.salon, 
+        cursos.cupo, 
+        cant_alu.cont_alu
+;
+
 DROP TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`;
