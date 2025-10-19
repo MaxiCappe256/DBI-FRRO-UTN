@@ -268,3 +268,30 @@ SELECT alu.dni,
 -- Ayuda: tener en cuenta el uso de los paréntesis y la precedencia de los 
 -- operadores matemáticos.
 -- nro_curso fecha_ini salon cupo count( dni ) ( cupo - count( dni ) )
+DROP TEMPORARY TABLE IF EXISTS `afatse`.`tt_cant_alu_insc`;
+
+CREATE TEMPORARY TABLE `afatse`.`tt_cant_alu_insc` ( 
+SELECT 
+    COUNT(insc.dni) cont_alu
+	FROM `afatse`.`cursos` cursos
+	INNER JOIN `afatse`.`inscripciones` insc
+		ON cursos.nro_curso = insc.nro_curso AND cursos.nom_plan = insc.nom_plan
+	WHERE cursos.fecha_ini >= '2014-04-01'
+);
+
+SELECT 
+	cursos.nro_curso,
+    cursos.fecha_ini,
+    cursos.salon,
+    cursos.cupo,
+    cant_alu.cont_alu
+	FROM `afatse`.`cursos` cursos
+    INNER JOIN `afatse`.`tt_cant_alu_insc` cant_alu
+		ON cursos.nom_plan = cant_alu.nom_plan AND cursos.nro_curso = cant_alu.nom_plan
+	INNER JOIN `afatse`.`plan_capacitacion` planes
+		ON cursos.nom_plan = planes.nom_plan
+	INNER JOIN `afatse`.`inscripciones` insc
+		ON cursos.nom_plan = insc.nom_plan AND cursos.nro_curso = insc.nro_curso
+	GROUP BY cursos.nro_curso;
+    
+DROP TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`;
