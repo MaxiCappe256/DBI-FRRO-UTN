@@ -215,48 +215,37 @@ SELECT ins.cuil
     GROUP BY ins.cuil
     ;
 
--- 14) Alumnos que tengan todas sus cuotas pagas hasta la fecha.
-
-SELECT dni, nombre, apellido, tel, email, direccion
-	FROM `afatse`.`alumnos`
-    WHERE dni NOT IN (
-	SELECT dni
-		FROM `afatse`.`cuotas` cuo
-		WHERE fecha_pago IS NULL)
-        ORDER BY apellido DESC;
-        
-        
+-- 14) Alumnos que tengan todas sus cuotas pagas hasta la fecha.	
+    
 -- 15) Alumnos cuyo promedio supere al del curso que realizan. Mostrar dni, nombre y apellido,
 -- promedio y promedio del curso.
 
+DROP TEMPORARY TABLE IF EXISTS `afatse`.`tt_curso_promedio_notas`;
 
-
-DROP TEMPORARY TABLE IF EXISTS tt_promedio_cursos;
-
-CREATE TEMPORARY TABLE tt_promedio_cursos (
-	SELECT eva.nom_plan,  eva.nro_curso, AVG(eva.nota) AS prom_curso
+CREATE TEMPORARY TABLE `afatse`.`tt_curso_promedio_notas`
+	SELECT 
+    eva.nro_curso AS tt_nro_curso, 
+    eva.nom_plan AS tt_nom_plan, 
+    AVG(eva.nota) AS tt_prom_curso
 		FROM `afatse`.`evaluaciones` eva
-		GROUP BY eva.nom_plan, eva.nro_curso
+        INNER JOIN `afatse`.`alumnos` alu
+			ON eva.dni = alu.dni
+		GROUP BY eva.nro_curso, eva.nom_plan
+		;
         
-);
-
-SELECT * FROM tt_promedio_cursos;
-
-DROP TEMPORARY TABLE tt_promedio_cursos;
-
-SELECT alu.dni,
-	alu.nombre,
-    alu.apellido,
-    ROUND(AVG(eva.nota),2) "avg nota",
-    ROUND(AVG(prom.prom_curso)) "prom curso"
+SELECT alu.dni, alu.nombre, alu.apellido, AVG(eva.nota) AS prom_alu, ttcpn.tt_prom_curso AS prom_curso
 	FROM `afatse`.`alumnos` alu
-    INNER JOIN `afatse`.`evaluaciones` eva
-		ON alu.dni = eva.dni
-	INNER JOIN `afatse`.`tt_promedio_cursos` prom
-		ON eva.nom_plan = prom.nom_plan AND eva.nro_curso = prom.nro_curso
-	GROUP BY alu.dni, alu.nombre, alu.apellido, prom.prom_curso
-	HAVING AVG(eva.nota) > prom.prom_curso
-    ;
+	INNER JOIN `afatse`.`inscripciones` insc
+		ON alu.dni = insc.dni
+	INNER JOIN `afatse`.`evaluaciones` eva
+		ON eva.nom_plan = insc.nom_plan AND eva.nro_curso = insc.nro_curso AND eva.dni = insc.dni
+	INNER JOIN `afatse`.`tt_curso_promedio_notas` ttcpn
+		ON ttcpn.tt_nom_plan = eva.nom_plan AND ttcpn.tt_nro_curso = eva.nro_curso
+	GROUP BY alu.dni, alu.nombre, alu.apellido, ttcpn.tt_prom_curso
+    HAVING AVG(eva.nota) > tt_prom_curso
+    ORDER BY alu.nombre ASC;
+
+DROP TEMPORARY TABLE `afatse`.`tt_curso_promedio_notas`;
 
 
 -- 16)Para conocer la disponibilidad de lugar en los cursos que empiezan en abril 
@@ -268,39 +257,44 @@ SELECT alu.dni,
 -- Ayuda: tener en cuenta el uso de los paréntesis y la precedencia de los 
 -- operadores matemáticos.
 -- nro_curso fecha_ini salon cupo count( dni ) ( cupo - count( dni ) )
+
 DROP TEMPORARY TABLE IF EXISTS `afatse`.`tt_cant_alu_insc`;
 
-CREATE TEMPORARY TABLE `afatse`.`tt_cant_alu_insc` ( 
-SELECT 
-	cursos.nom_plan cur_nom_plan,
-    cursos.nro_curso cur_nro_curso,
-    COUNT(insc.dni) cont_alu
-	FROM `afatse`.`cursos` cursos
-	INNER JOIN `afatse`.`inscripciones` insc
-		ON cursos.nro_curso = insc.nro_curso AND cursos.nom_plan = insc.nom_plan
-	WHERE cursos.fecha_ini >= '2014-04-01'
-    GROUP BY cursos.nom_plan, cursos.nro_curso
-);
+CREATE TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`
+	SELECT 
+        cur.nom_plan, 
+        cur.nro_curso, 
+        cur.fecha_ini,
+		COUNT(dni) AS tt_count_dni
+		FROM `afatse`.`cursos` cur
+        LEFT JOIN `afatse`.`inscripciones` ins
+			ON cur.nom_plan = ins.nom_plan 
+            AND cur.nro_curso = ins.nro_curso
+		WHERE cur.fecha_ini >= '2014-04-01'
+        GROUP BY cur.nom_plan, cur.nro_curso, cur.fecha_ini;
+    
 
 SELECT 
-	cursos.nro_curso,
-    cursos.fecha_ini,
-    cursos.salon,
-    cursos.cupo,
-    cant_alu.cont_alu,
-	(cursos.cupo - COUNT(cant_alu))
-	FROM `afatse`.`cursos` cursos
-    LEFT JOIN `afatse`.`tt_cant_alu_insc` cant_alu
-		ON cursos.nom_plan = cant_alu.cur_nom_plan 
-		AND cursos.nro_curso = cant_alu.cur_nro_curso
-	INNER JOIN `afatse`.`plan_capacitacion` planes
-		ON cursos.nom_plan = planes.nom_plan
-	GROUP BY 
-		cursos.nro_curso, 
-		cursos.fecha_ini, 
-        cursos.salon, 
-        cursos.cupo, 
-        cant_alu.cont_alu
-;
+	cur.nom_plan AS plan_capacitacion,
+	cur.nro_curso,
+    cur.fecha_ini,
+    cur.salon,
+    cur.cupo AS cupo,
+    ttcai.tt_count_dni AS cant_insc,
+    (cupo - ttcai.tt_count_dni) AS diferencia_con_cupo,
+    (cupo - ttcai.tt_count_dni) / cur.cupo AS porcentaje_libre
+    
+		FROM `afatse`.`cursos` cur
+		INNER JOIN `afatse`.`tt_cant_alu_insc` ttcai
+			ON cur.nom_plan = ttcai.nom_plan 
+				AND cur.nro_curso = ttcai.nro_curso 
+				AND cur.fecha_ini = ttcai.fecha_ini
+        HAVING porcentaje_libre > 0.8
+        ORDER BY porcentaje_libre DESC;
 
 DROP TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`;
+
+SELECT COUNT(dni) "cant ins", c.cupo "cupos" FROM `afatse`.`cursos` c
+INNER JOIN `afatse`.`inscripciones` i
+ON c.nom_plan = i.nom_plan AND c.nro_curso = i.nro_curso
+GROUP BY c.cupo;
