@@ -272,7 +272,6 @@ CREATE TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`
             AND cur.nro_curso = ins.nro_curso
 		WHERE cur.fecha_ini >= '2014-04-01'
         GROUP BY cur.nom_plan, cur.nro_curso, cur.fecha_ini;
-    
 
 SELECT 
 	cur.nom_plan AS plan_capacitacion,
@@ -293,8 +292,3 @@ SELECT
         ORDER BY porcentaje_libre DESC;
 
 DROP TEMPORARY TABLE `afatse`.`tt_cant_alu_insc`;
-
-SELECT COUNT(dni) "cant ins", c.cupo "cupos" FROM `afatse`.`cursos` c
-INNER JOIN `afatse`.`inscripciones` i
-ON c.nom_plan = i.nom_plan AND c.nro_curso = i.nro_curso
-GROUP BY c.cupo;

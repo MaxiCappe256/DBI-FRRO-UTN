@@ -4,6 +4,23 @@
 -- BASE DE DATOS: AGENCIA_PERSONAL
 
 -- **1) Mostrar las comisiones pagadas por la empresa Tráigame eso
+	
+SELECT *
+	FROM `agencia_personal`.``
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 SELECT razon_social "razon_social", sum( importe_comision ) "Comisiones Pagas"
 	FROM `agencia_personal`.`empresas` E
 		INNER JOIN `agencia_personal`.`solicitudes_empresas` SE 
@@ -61,6 +78,23 @@ SELECT nombre_entrevistador, desc_evaluacion,
 
 -- 5) Cuantas entrevistas fueron hechas por cada entrevistador en octubre de 2014.
 
+SELECT
+  nombre_entrevistador,
+  COUNT(*) AS `Cantidad de Entrevistas`
+FROM entrevistas
+WHERE fecha_entrevista >= '2014-10-01'
+  AND fecha_entrevista <  '2014-11-01'
+GROUP BY nombre_entrevistador
+ORDER BY nombre_entrevistador;
+
+
+
+
+
+
+
+
+
 -- 6) Ídem 4) pero para todos los entrevistadores. Mostrar nombre y cantidad.
 -- Ordenado por cantidad de entrevistas.
 SELECT nombre_entrevistador, desc_evaluacion, count(*) "Cantidad",
@@ -92,13 +126,12 @@ SELECT nombre_entrevistador, desc_evaluacion, count(*) "Cantidad",
     HAVING COUNT(*) > 1  #  HAVING cod_evaluacion > 1  <-- condiciones que debe cumplir un atributo en el where, acá está mal
     ORDER BY EE.cod_evaluacion ASC;  # DESC
 
--- Error Code: 1055. Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 
--- 'agencia_personal.E.nombre_entrevistador' which is not functionally dependent on columns in GROUP BY clause; 
--- this is incompatible with sql_mode=only_full_group_by
+
 
 
 -- **8) Mostrar para cada contrato cantidad total de las comisiones, cantidad a pagar,
 -- cantidad pagadas.
+
 SELECT CON.nro_contrato "contrato", 
 	count(*) "Total", 
     count(fecha_pago) "pagadas", 
@@ -113,6 +146,26 @@ SELECT CON.nro_contrato "contrato",
 
 -- **9) Mostrar para cada contrato la cantidad de comisiones, el % de comisiones pagas y
 -- el % de impagas.
+
+SELECT 
+	con.nro_contrato,
+    COUNT(*) "Total",
+    (COUNT(fecha_pago) / COUNT(*)) * 100 "pagadas",
+    ((COUNT(*) - COUNT(fecha_pago)) / COUNT(*)) * 100 "a pagar"
+	FROM `agencia_personal`.`contratos` con
+    INNER JOIN `agencia_personal`.`comisiones` com
+		ON con.nro_contrato = com.nro_contrato
+	GROUP BY con.nro_contrato;
+
+
+
+
+
+
+
+
+
+
 SELECT CON.nro_contrato, COM.fecha_pago
 	FROM `agencia_personal`.`contratos` CON 
 		INNER JOIN `agencia_personal`.`comisiones` COM ON CON.nro_contrato=COM.nro_contrato;
@@ -130,6 +183,18 @@ SELECT
 -- 10) Mostar la cantidad de empresas diferentes que han realizado solicitudes y la
 -- diferencia respecto al total de solicitudes.
 -- | cantidad      | diferencia              |
+
+SELECT 
+	COUNT(fecha_solicitud) "Cantidad",
+    COUNT(*) - COUNT(fecha_solicitud) "Diferencia"
+	FROM `agencia_personal`.`empresas` emp	
+    LEFT JOIN `agencia_personal`.`solicitudes_empresas` sol
+		ON emp.cuit = sol.cuit
+	GROUP BY emp.cuit;
+	
+
+
+
 SELECT COUNT(DISTINCT EMP.cuit) "cantidad de empresas diferentes que han realizado solicitudes",
 	COUNT(*) - COUNT(DISTINCT EMP.cuit) "la diferencia respecto al total"
 	FROM `agencia_personal`.`empresas` EMP INNER JOIN `agencia_personal`.`solicitudes_empresas` SE
@@ -137,6 +202,21 @@ SELECT COUNT(DISTINCT EMP.cuit) "cantidad de empresas diferentes que han realiza
 
 
 -- 11) Cantidad de solicitudes por empresas.
+SELECT 
+	emp.cuit "Cuit",
+    emp.razon_social,
+    COUNT(*)
+	FROM `agencia_personal`.`empresas` emp
+    INNER JOIN `agencia_personal`.`solicitudes_empresas` sol
+		ON emp.cuit = sol.cuit
+	GROUP BY emp.cuit;
+	
+
+
+
+
+
+
 SELECT EMP.cuit "cuit", EMP.razon_social "razon_social", COUNT(*) "cant. de solicitudes"
 	FROM `agencia_personal`.`empresas` EMP INNER JOIN `agencia_personal`.`solicitudes_empresas` SE
 		ON EMP.cuit=SE.cuit
@@ -146,6 +226,24 @@ SELECT EMP.cuit "cuit", EMP.razon_social "razon_social", COUNT(*) "cant. de soli
 
 -- 12) Cantidad de solicitudes por empresas y cargos.
 -- |cuit |razon_social |descripción del cargo | cantidad|
+
+SELECT
+	emp.cuit,
+    emp.razon_social,
+    car.cod_cargo,
+    COUNT(*)
+	FROM `agencia_personal`.`empresas` emp
+    INNER JOIN `agencia_personal`.`solicitudes_empresas` sol
+		ON emp.cuit = sol.cuit
+	INNER JOIN `agencia_personal`.`cargos` car
+		ON sol.cod_cargo = car.cod_cargo
+	GROUP BY emp.cuit, car.cod_cargo;
+
+
+
+
+
+
 SELECT 
 	EMP.cuit "cuit", EMP.razon_social "razon_social", 
 	CONCAT (CAR.cod_cargo, "-", CAR.desc_cargo) "descripción del cargo", COUNT(*) "cant. de solicitudes"
@@ -187,6 +285,20 @@ SELECT *
 ;
 
 -- **15) Indicar los cargos que hayan sido solicitados menos de 2 veces
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 SELECT ANT.cod_cargo "cod_cargo", CAR.desc_cargo "desc_cargo", count(ANT.cod_cargo) "Cant de Solicitudes" 
 	FROM `agencia_personal`.`cargos` CAR
 		LEFT JOIN `agencia_personal`.`antecedentes` ANT ON ANT.cod_cargo=CAR.cod_cargo
