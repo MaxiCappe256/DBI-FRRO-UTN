@@ -87,3 +87,25 @@ INSERT INTO `afatse`.`valores_plan`
     VALUES
 		('Administrador de BD', '2009-02-01', 150.000);
         
+        
+-- UPDATE
+
+-- 1) Como resultado de una mudanza a otro edificio más grande se ha incrementado la
+-- capacidad de los salones, además la experiencia que han adquirido los instructores permite
+-- ampliar el cupo de los cursos. Para todos los curso con modalidad presencial y
+-- semipresencial aumentar el cupo de la siguiente forma:
+-- ● 50% para los cursos con cupo menor a 20
+-- ● 25% para los cursos con cupo mayor o igual a 20
+
+
+SELECT * FROM `afatse`.`cursos`;
+
+UPDATE `afatse`.`cursos` cur
+	INNER JOIN `afatse`.`plan_capacitacion` pc
+		ON cur.nom_plan = pc.nom_plan
+	SET cur.cupo = cur.cupo * 1.50
+    WHERE cur.cupo IS NOT NULL 
+		AND cur.cupo < 20
+        AND (LOWER(pc.modalidad) = 'presencial' OR LOWER(pc.modalidad) LIKE 'semi%');
+        
+
